@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="dakboard">
+    <serverData>
+      <paths name="dakboard">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/deploy" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/smbus.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/RPi.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/config.json" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="home_mon">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/deploy" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/smbus.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/RPi.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/config.json" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="home_mon_01">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/deploy" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/smbus.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/RPi.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/config.json" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="home_mon_02">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/deploy" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/smbus.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/RPi.py" />
+            <excludedPath local="true" path="$PROJECT_DIR$/config.json" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>

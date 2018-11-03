@@ -1,0 +1,3 @@
+# stub
+def GPIO():
+    pass

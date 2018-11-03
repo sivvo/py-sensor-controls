@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="14b6f2c1-c578-48c2-9b7d-6cbe530da83b" name="dakboard" url="http://dakboard.local">
+        <fileTransfer host="dakboard.local" port="22" rootFolder="/home/pi" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="cc2cec53-6fb8-497d-9d6d-12adf0362e0c" name="home_mon_02" url="http://home_mon_02">
+        <fileTransfer host="home_mon_02" port="22" rootFolder="/home/pi" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="02fdd8b9-a083-4ab8-9853-9e18eeda663c" name="home_mon_01" url="http://home_mon_01">
+        <fileTransfer host="home_mon_01" port="22" rootFolder="/home/pi" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="c2756f48-2b0c-4727-944f-82167050dce6" name="home_mon" url="http://home_mon">
+        <fileTransfer host="home_mon" port="22" rootFolder="/home/pi" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

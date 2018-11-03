@@ -1,0 +1,14 @@
+[Unit]
+Description=Temperature Logger
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/pi/deploy/logger.py
+WorkingDirectory=/home/pi/deploy/
+Environment=API_KEY=123456789
+Environment=API_PASS=password
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=sysinit.target

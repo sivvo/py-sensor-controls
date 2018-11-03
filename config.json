@@ -1,0 +1,28 @@
+{
+  "sensor_name": {
+    "name": "Outside"
+  },
+
+  "temperature": {
+    "name": "room1",
+    "enabled": "False",
+    "mode": "device",
+    "location": "/dev/sys/",
+    "type": "temperature"
+  },
+  "lux": {
+    "name": "",
+    "enabled": "False",
+    "type": "lyx"
+  },
+  "movement": {
+    "name": "",
+    "enabled": "False",
+    "type": "movement"
+  },
+  "outside": {
+    "name": "",
+    "enabled": "True",
+    "type": "outside"
+  }
+}
