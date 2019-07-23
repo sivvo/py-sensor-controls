@@ -16,12 +16,20 @@ except:
     pass
 import urllib
 import urllib2
+from influxdb import InfluxDBClient
+
+influx_host = '192.168.1.11'
+influx_port = '8086'
+influx_database = 'homeclimate'
+influx_dbuser = 'piweather'
+influx_dbpassword = 'piweather'
+client = InfluxDBClient(influx_host, influx_port, influx_dbuser, influx_dbpassword, influx_database)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 handler = logging.FileHandler('logger.log')
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 
 # create a logging format
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -31,8 +39,8 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logging.getLogger().addHandler(logging.StreamHandler())
 
-THINGSPEAKKEY = ''
-THINGSPEAKURL = 'http://192.168.1.170:5000/api/sensor'
+#THINGSPEAKKEY = ''
+#THINGSPEAKURL = 'http://192.168.1.170:5000/api/sensor'
 SENSORINTERVAL = 300 # delay between sensor reads
 
 class sensor(object):
@@ -248,17 +256,20 @@ class TempLogger():
 
         # get each of our sensor values... and then log them
         # push them all at once?
-        timestamp = time.time()
+        timestamp = time.time() # not compatible with line
+        timestamp = time.ctime()
         output = {}
+
         if self.temperature.enabled == "True":
             # self.get_temperature()
             output['temperature'] = self.get_data(self.temperature)
+
             #output.add("temperature: %s", self.get_data(self.temperature))
             #print self.get_data(self.temperature)
         if self.humidity.enabled == "True":
             #print self.get_data(self.humidity)
             resp = self.get_data(self.humidity)
-            output['temperature'] = resp[0]
+            output['temperature'] = float(resp[0])
             output['humidity'] = resp[1]
             #output.add("temperature: %s, humidity: %s", resp[0], resp[1])
             # self.get_humidity()
@@ -282,26 +293,27 @@ class TempLogger():
 
         if len(output) > 0:
             # we have some values
-            output['timestamp'] = timestamp
-            output['sensor'] = str(self.sensor_name["name"])
-            output['api_key'] = THINGSPEAKKEY
-            postdata = urllib.urlencode(output)
+            #output['timestamp'] = timestamp
+            #output['sensor'] = str(self.sensor_name["name"]) # don't need this anymore
+            logger.debug(output)
+            data = [
+                {
+                    "measurement": "piweather",
+                    "tags": {
+                        "location": str(self.sensor_name["name"]),
+                    },
+                    "time": timestamp,
+                    "fields":
+                        output
+                }
+            ]
 
-            req = urllib2.Request(THINGSPEAKURL, postdata)
-
-            #print THINGSPEAKURL, postdata
+            # Send the JSON data to InfluxDB
+            logger.debug("writing data to the server")
             try:
-                # Send data to Thingspeak
-                response = urllib2.urlopen(req, None, 5)
-                html_string = response.read()
-                response.close()
-            except urllib2.HTTPError, e:
-                logger.warn("Server could not fulfill the request. Error code: %s", e.code)
-            except urllib2.URLError, e:
-                logger.warn("Failed to reach server. Reason: %s", e.reason)
+                client.write_points(data)
             except:
-                logger.warn("Unknown error")
-
+                logger.warning("couldn't write to influxDB")
     def get_data(self, obj):
         response = obj.get_value()
         return response

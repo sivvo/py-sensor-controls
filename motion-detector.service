@@ -1,0 +1,13 @@
+[Unit]
+Description=TDescription=Motion Detector Activator
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python /home/pi/motion.py
+WorkingDirectory=/home/pi/
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+os
+time
+json
+logging
+sys
+lightmodule
+dht11
+datetime
+RPi.GPIO
+urllib
+urllib2
+influxdb
