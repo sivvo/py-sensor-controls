@@ -10,15 +10,26 @@ import sys
 import lightmodule
 import dht11
 import datetime
+
+project_folder = os.path.expanduser('~/deploy')  # adjust as appropriate
+
 try:
     import RPi.GPIO as GPIO
+except:
+    pass
+try:
+    import smbus2
+except:
+    pass
+try:
+    import bme280
 except:
     pass
 import urllib
 import urllib2
 from influxdb import InfluxDBClient
 
-influx_host = '192.168.1.11'
+influx_host = '192.168.1.13'
 influx_port = '8086'
 influx_database = 'homeclimate'
 influx_dbuser = 'piweather'
@@ -39,9 +50,8 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logging.getLogger().addHandler(logging.StreamHandler())
 
-#THINGSPEAKKEY = ''
-#THINGSPEAKURL = 'http://192.168.1.170:5000/api/sensor'
-SENSORINTERVAL = 300 # delay between sensor reads
+SENSORINTERVAL = 300  # delay between sensor reads
+
 
 class sensor(object):
     name = ""
@@ -49,12 +59,14 @@ class sensor(object):
     mode = ""
     location = ""
     type = ""
+    dataport = 0
 
     def __init__(self, settings):
         self.name = self.try_to_load("name", settings)
         self.enabled = self.try_to_load("enabled", settings)
         self.mode = self.try_to_load("mode", settings)
         self.location = self.try_to_load("location", settings)
+        self.dataport = self.try_to_load("dataport", settings)
         self.type = self.try_to_load("type", settings)
         self.local_settings()
 
@@ -73,10 +85,12 @@ class sensor(object):
         logger.debug("enabled: %s", self.enabled)
         logger.debug("mode: %s", self.mode)
         logger.debug("location: %s", self.location)
+        logger.debug("dataport: %n", self.dataport)
         logger.debug("type: %s", self.type)
 
     def get_value(self):
         raise NotImplementedError("get_value must be defined in subclasses of sensor")
+
 
 class temperaturesensor(sensor):
     def get_value(self):
@@ -99,9 +113,11 @@ class temperaturesensor(sensor):
                 temp_c = float(temp_string) / 1000.0
                 return temp_c
 
+
 class luxsensor(sensor):
     def get_value(self):
         return lightmodule.readLight()
+
 
 class humiditysensor(sensor):
     def local_settings(self):
@@ -109,7 +125,7 @@ class humiditysensor(sensor):
         try:
             GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
-            #GPIO.cleanup()
+            # GPIO.cleanup()
             # read data using pin 4
             self.instance = dht11.DHT11(pin=4)
         except:
@@ -128,14 +144,14 @@ class humiditysensor(sensor):
             # raise ValueError("We didn't get a valid response from the sensor %s" % result.error_code)^M
             logger.warn("the sensor returned junk %s" % result.error_code)
 
+
 class outsidesensor(sensor):
     def get_value(self):
-
-    # OUTSIDE TEMPERATURE
+        # OUTSIDE TEMPERATURE
         apikey = ""  # sign up here http://www.wunderground.com/weather/api/ for a key
         unit = 'metric'  # For Fahrenheit use imperial, for Celsius use metric, and the default is Kelvin.
         apiurl = 'http://api.openweathermap.org/data/2.5/weather?id=2643741'
-        full_api_url = apiurl+'&mode=json&units=metric&APPID=' + apikey
+        full_api_url = apiurl + '&mode=json&units=metric&APPID=' + apikey
 
         url = urllib2.urlopen(full_api_url)
         output = url.read().decode('utf-8')
@@ -159,10 +175,10 @@ class outsidesensor(sensor):
         )
 
         m_symbol = '\xb0' + 'C'
-        #print(data['temp'], m_symbol, data['sky'])
+        # print(data['temp'], m_symbol, data['sky'])
         temp = data['temp']
         min_temp = data['temp_min']
-        max_temp= data['temp_max']
+        max_temp = data['temp_max']
         humidity = data['humidity']
         sunrise = data['sunrise']
         sunset = data['sunset']
@@ -175,11 +191,50 @@ class outsidesensor(sensor):
         ).strftime('%I:%M %p')
         return converted_time
 
+
+class bme280sensor(sensor):
+    def local_settings(self):
+        self.address = 0x76
+        self.bus = smbus2.SMBus(self.dataport)
+        self.calibration_params = bme280.load_calibration_params(self.bus, self.address)
+
+    def get_value(self):
+        data = bme280.sample(self.bus, self.address, self.calibration_params)
+        return data.temperature, data.pressure
+
+
+class bme680sensor(sensor):
+    def local_settings(self):
+        self.address = 0x76
+        self.bus = smbus2.SMBus(self.dataport)
+        self.calibration_params = bme280.load_calibration_params(self.bus, self.address)
+
+    def get_value(self):
+        data = bme280.sample(self.bus, self.address, self.calibration_params)
+        return data.temperature, data.pressure
+
+
+Runs the sensor for a burn-in period, then uses a
+combination of relative humidity and gas resistance
+to estimate indoor air quality as a percentage.
+
+Press Ctrl+C to exit!
+Gas: 214689.00 Ohms,humidity: 39.71 %RH,air quality: 99.02
+
+
+Gas: 144231.00 Ohms,humidity: 68.75 %RH,air quality: 71.40
+Gas: 145099.00 Ohms,humidity: 68.30 %RH,air quality: 71.94
+Gas: 146104.00 Ohms,humidity: 67.79 %RH,air quality: 72.56
+
+
+
+
 class TempLogger():
     def __init__(self):
         self.temperature = []
         self.humidity = []
         self.lux = []
+        self.bme280 = []
         self.movement = []
         self.outside = []
         self.config_data = []
@@ -224,6 +279,7 @@ class TempLogger():
         self.movement = sensor(self.parse_config_enabled("movement"))
         self.sensor_name = self.parse_config_enabled('sensor_name')
         self.outside = outsidesensor(self.parse_config_enabled("outside"))
+        self.bme280 = bme280sensor(self.parse_config_enabled("bme280"))
 
         # self.temperature.print_settings()
         # self.humidity.print_settings()
@@ -239,24 +295,21 @@ class TempLogger():
         if self.lux.enabled == "True":
             logger.info("Enabling Lux")
             self.active_sensors.append(self.lux)
+        if self.bme280.enabled == "True":
+            logger.info("Enabling BME280")
+            self.active_sensors.append(self.lux)
         if self.movement.enabled == "True":
             logger.info("Enabling Movement")
             self.active_sensors.append(self.movement)
         if self.outside.enabled == "True":
             logger.info("Enabling Outside")
 
-        # for sensoritem in self.active_sensors:
-        #    print sensoritem
-        #    print sensoritem.name
-        #    print sensoritem.type
-        #    print sensor.name
-
     def getvalues(self):
         logger.info("Checking for values")
 
         # get each of our sensor values... and then log them
         # push them all at once?
-        timestamp = time.time() # not compatible with line
+        timestamp = time.time()  # not compatible with line
         timestamp = time.ctime()
         output = {}
 
@@ -264,22 +317,28 @@ class TempLogger():
             # self.get_temperature()
             output['temperature'] = self.get_data(self.temperature)
 
-            #output.add("temperature: %s", self.get_data(self.temperature))
-            #print self.get_data(self.temperature)
+            # output.add("temperature: %s", self.get_data(self.temperature))
+            # print self.get_data(self.temperature)
+        if self.bme280.enabled == "True":
+            # print self.get_data(self.humidity)
+            resp = self.get_data(self.bme280)
+            output['temperature'] = float(resp[0])
+            output['pressure'] = resp[1]
+
         if self.humidity.enabled == "True":
-            #print self.get_data(self.humidity)
+            # print self.get_data(self.humidity)
             resp = self.get_data(self.humidity)
             output['temperature'] = float(resp[0])
             output['humidity'] = resp[1]
-            #output.add("temperature: %s, humidity: %s", resp[0], resp[1])
+            # output.add("temperature: %s, humidity: %s", resp[0], resp[1])
             # self.get_humidity()
         if self.lux.enabled == "True":
-            #print self.get_data(self.lux)
+            # print self.get_data(self.lux)
             output['lux'] = self.get_data(self.lux)
-            #output.add("lux: %s", self.get_data(self.lux))
+            # output.add("lux: %s", self.get_data(self.lux))
             # self.get_lux()
         if self.movement.enabled == "True":
-            #print self.get_data(self.movement)
+            # print self.get_data(self.movement)
             raise NotImplementedError("Movement monitoring hasn't been implemented yet")
             # self.get_movement()
         if self.outside.enabled == "True":
@@ -293,8 +352,8 @@ class TempLogger():
 
         if len(output) > 0:
             # we have some values
-            #output['timestamp'] = timestamp
-            #output['sensor'] = str(self.sensor_name["name"]) # don't need this anymore
+            # output['timestamp'] = timestamp
+            # output['sensor'] = str(self.sensor_name["name"]) # don't need this anymore
             logger.debug(output)
             data = [
                 {
@@ -314,9 +373,11 @@ class TempLogger():
                 client.write_points(data)
             except:
                 logger.warning("couldn't write to influxDB")
+
     def get_data(self, obj):
         response = obj.get_value()
         return response
+
 
 templogger = TempLogger()
 while True:
